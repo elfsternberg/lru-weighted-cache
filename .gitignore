@@ -1,0 +1,12 @@
+target
+Cargo.lock
+*#
+.#*
+*~
+*.orig
+*.aux
+*.log
+*.out
+*.pdf
+*.bk
+notes
