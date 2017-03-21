@@ -10,3 +10,4 @@ Cargo.lock
 *.pdf
 *.bk
 notes
+**/*:[0-9]*:[0-9]*
