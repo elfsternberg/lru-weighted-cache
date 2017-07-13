@@ -7,19 +7,16 @@ based on the size of inserted objects.
 
 An implementation of an LRU Cache.  The cache supports 'get', 'put', and
 pop' operations, all of which are approximately O(1).  Uses Rust's Robin
-Hood HashMap under the covers.  The difference between this one and the
-one in nightly is that the *values* must be Sized (that is, they must
-implement a len() function), the HashMap must be instantiated with a
-pair of usizes: one the largest object the HashMap will accept, and two
-the maximum number of those objects the HashMap will handle.
+Hood HashMap under the covers.  The difference between this implentation
+and reference implementation is that the *values* must implement the
+ArbSize trait, which has one function, size().  The container takes two
+size arguments, one the largest legal size of an individual item, the
+other the number of maximally sized objects the cache can hold.
 
-This cache is meant to support a simple text cache, with the caveat that
-the over memory usage has a ceiling: Maximum_Entry_Size *
-Maximum_Number_Of_Maximal_Entries.  If your largest entry is half the
-size of the maximum entry size, then you could store twice as many.
-Provided an object to be inserted is below the maximum entry size,
-insertion will systematically evict least-used entries until there is
-sufficient room for the object in question.
+The sizes are *arbitrary* and don't actually mean anything.  The intent
+is to track the maximum memory used by the container, but that intent is
+applied by the developer when the size() function is defined, not by the
+code.
 
 Also: I wrote this as part of
 [Monologued](https://elfsternberg.github.com/monologued), so it's part
