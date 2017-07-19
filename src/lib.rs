@@ -66,7 +66,7 @@ impl<K, V> LruCacheItem<K, V> {
             key: key,
             value: value,
             prev: ptr::null_mut(),
-            next: ptr::null_mut()
+            next: ptr::null_mut(),
         }
     }
 }
@@ -103,7 +103,7 @@ impl<K: Hash + Eq, V: ArbSized> LruCritCache<K, V> {
 
         lrucache
     }
-    
+
 
     pub fn accepts(&mut self, value: &V) -> bool {
         value.size() <= self.maxitemsize
@@ -111,8 +111,18 @@ impl<K: Hash + Eq, V: ArbSized> LruCritCache<K, V> {
 
 
     /* From the oldest upward, discard objects until there's enough
-     * room for the requested object. */
-    fn eject(&mut self, value: &V)  {
+       room for the requested object.
+    */
+
+    fn eject(&mut self, value: &V, node_ptr: &Option<*mut LruCacheItem<K, V>>) {
+        match *node_ptr {
+            Some(node_ptr) => {
+                // Remove the size of the value for an existing candidate node.
+                unsafe { self.cursize = self.cursize - (*node_ptr).value.size() };
+            }
+            None => {}
+        }
+
         while self.cursize + value.size() > self.maxtotalsize {
             let old_key = LruCacheKey { key: unsafe { &(*(*self.tail).prev).key } };
             let old_node = self.cache.remove(&old_key).unwrap();
@@ -120,33 +130,32 @@ impl<K: Hash + Eq, V: ArbSized> LruCritCache<K, V> {
         }
     }
 
+
     /// Put a key-value pair into the cache, ejecting older entries as
-    /// necessary until the new value "fits" according to the Arbsize
+    /// necessary until the new value "fits" according to the ArbSize
     /// trait.
-    
+
     pub fn insert(&mut self, key: K, value: V) -> bool {
-        if ! self.accepts(&value) {
-            return false
+        if !self.accepts(&value) {
+            return false;
         }
 
-        /* Eject until there's enough room to store the value. */
-        self.eject(&value);
-
-        /* It's still possible the requested key is present even after
-         * ejection.  I guess we'll try to re-use it, following
-         * Froelich's example. */
         let node_ptr = self.cache.get_mut(&LruCacheKey { key: &key }).map(|node| {
             let node_ptr: *mut LruCacheItem<K, V> = &mut **node;
             node_ptr
         });
 
-        /* Something weird here; my instincts are telling me there's a
-         * possibility of over-ejection, but I can't quite formulate
-         * why... TODO: This deserves more thought. */
+        /* Eject until there's enough room to store the value. Pass
+           the node_ptr so eject can avoid over-ejection by knowing to
+           calculate the candidate node value size, if a candidate
+           node is already present.
+        */
+        self.eject(&value, &node_ptr);
+
         match node_ptr {
             Some(node_ptr) => {
                 unsafe {
-                    self.cursize = self.cursize - (*node_ptr).value.size() + value.size();
+                    self.cursize = self.cursize + value.size();
                     (*node_ptr).value = value;
                 }
                 self.promote(node_ptr);
@@ -182,7 +191,7 @@ impl<K: Hash + Eq, V: ArbSized> LruCritCache<K, V> {
             }
         }
     }
-        
+
     pub fn len(&self) -> usize {
         self.cache.len()
     }
@@ -229,7 +238,7 @@ impl<K, V> Drop for LruCritCache<K, V> {
 
             /* The key and value in these were never used.  Tell the compiler we're
                forgetting about them without "dropping" them. */
-            
+
             let LruCacheItem { next: _, prev: _, key: head_key, value: head_val } = head;
             let LruCacheItem { next: _, prev: _, key: tail_key, value: tail_val } = tail;
 
@@ -240,7 +249,7 @@ impl<K, V> Drop for LruCritCache<K, V> {
         }
     }
 }
-            
+
 
 #[cfg(test)]
 mod tests {
@@ -289,6 +298,5 @@ mod tests {
         assert_eq!(cache.len(), 1);
         assert_eq!(cache.size(), 2);
     }
-    
-}
 
+}
