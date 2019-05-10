@@ -16,8 +16,8 @@ An implementation of an LRU Cache that will never exceed a certain
 weight, where "weight" is defined by the client code.  The cache
 supports 'get', 'insert', and 'remove' operations, all of which are
 approximately O(ln(n)).  We use HashMap under the covers.  The
-difference between this implentation and reference implementation is
-that the *values* must implement the `Weigted` trait, which has one
+difference between this implementation and reference implementation is
+that the *values* must implement the `Weighted` trait, which has one
 function, `weight()`.  The container takes two size arguments, one the
 largest legal size of an individual item, the other the number of
 maximally sized objects the cache can hold.
