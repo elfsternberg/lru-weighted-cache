@@ -1,1 +1,1 @@
-Least Recently Used Crit Cache is an LRU Cache library with size-based eviction criteria for Rust.
+lru-weighted-cache is a Weighted Least Recently Used library with weight-based eviction criteria for Rust.
